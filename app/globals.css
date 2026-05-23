@@ -1099,52 +1099,58 @@ img { max-width: 100%; display: block; }
   }
   .hero-bg {
     /*
-     * Image: 853×1844px portrait.
-     * background-size: 120% auto → renders at 468×1011px on 390px container.
-     * Logo at 40% of 1011 = 404px from top (buttons end ~356px → 48px gap).
-     * background-position: center 0% → image top aligned with container top,
-     * showing the spotlight/ceiling area at top (behind readable text via gradient),
-     * and the full logo below the buttons, uncovered.
+     * Image: 853×1844px portrait. At 120% auto → 468×1011px.
+     * Y=60% → offset=-211.8px → logo (at 40%=404px) appears at 192px from top.
+     * Logo occupies upper ~65% of hero; text/buttons pinned to bottom.
      */
-    background: url('/images/hero-bg-mobile.png') center 0% / 120% auto no-repeat, #050A05;
+    background: url('/images/hero-bg-mobile.png') center 60% / 120% auto no-repeat, #050A05;
   }
 
-  /* ── Mobile hero: tall enough to show text at top + logo clearly below ── */
+  /* ── Mobile hero: tall enough to show logo at top + text at bottom ── */
   .home-page .hero-section {
-    min-height: 78vh;
+    min-height: 80vh;
   }
   .hero-section {
-    align-items: flex-start; /* text pinned to top → logo reveals naturally below */
+    flex-direction: column;     /* stack vertically */
+    justify-content: flex-end;  /* push content to bottom */
+    align-items: center;        /* center horizontally */
   }
 
-  /* ── Gradient: heavy dark top (text readability), clears for logo zone, soft fade at bottom ── */
+  /* ── Gradient: clear at top (logo visible), dark at bottom (text readable) ── */
   .hero-bg::after {
     background:
       linear-gradient(to bottom,
-        rgba(5,10,5,0.93) 0%,
-        rgba(5,10,5,0.78) 22%,
-        rgba(5,10,5,0.20) 45%,
-        rgba(5,10,5,0.02) 58%,
-        rgba(5,10,5,0.02) 85%,
-        rgba(5,10,5,0.30) 100%);
+        rgba(5,10,5,0.15) 0%,
+        rgba(5,10,5,0.02) 12%,
+        rgba(5,10,5,0.02) 50%,
+        rgba(5,10,5,0.40) 65%,
+        rgba(5,10,5,0.85) 78%,
+        rgba(5,10,5,0.92) 100%);
   }
 
-  /* ── Hero content: compact, single-column, RTL, anchored to top ── */
+  /* ── Hero content: centered, bottom-padded ── */
   .hero-content {
-    padding: 2rem 1.25rem 0;
+    padding: 0 1.5rem 2rem;
     grid-template-columns: 1fr;
     direction: rtl;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     gap: 0;
   }
-  .hero-text { max-width: 100%; direction: rtl; }
+  .hero-text {
+    max-width: 100%;
+    direction: rtl;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
-  /* Tighten spacing — keep badge/title/subtitle/buttons compact at top */
   .hero-badge    { margin-bottom: 0.75rem; }
-  .hero-title    { font-size: clamp(1.85rem, 7.5vw, 2.4rem); margin-bottom: 0.25rem; }
-  .hero-subtitle { margin-bottom: 0.65rem; padding-bottom: 0.65rem; }
-  .hero-description { display: none; } /* Hidden on mobile — image tells the story */
-  .hero-actions  { gap: 0.6rem; }
+  .hero-title    { font-size: clamp(1.85rem, 7.5vw, 2.4rem); margin-bottom: 0.25rem; text-align: center; }
+  .hero-subtitle { margin-bottom: 0.65rem; padding-bottom: 0.65rem; text-align: center; }
+  .hero-description { display: none; }
+  .hero-actions  { gap: 0.6rem; justify-content: center; }
 
   /* ── Feature cards: glass over background image ── */
   .features-section {
