@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import AppointmentsTable from '@/components/admin/AppointmentsTable'
 import InquiriesTable from '@/components/admin/InquiriesTable'
 import ChangeUnitPassword from '@/components/admin/ChangeUnitPassword'
+import ChangeAdminPin from '@/components/admin/ChangeAdminPin'
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard'
 import { useToast } from '@/context/ToastContext'
 import type { Appointment, Inquiry } from '@/lib/types'
@@ -133,6 +134,9 @@ export default function DashboardPage() {
 
       {/* Unit Access Code Management */}
       <ChangeUnitPassword />
+
+      {/* Admin PIN change — compact, at bottom */}
+      <ChangeAdminPin />
     </div>
   )
 }

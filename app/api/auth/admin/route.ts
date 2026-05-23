@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { signAdminToken } from '@/lib/auth/admin-token'
 import { checkRateLimit, recordFailedAttempt, clearAttempts } from '@/lib/auth/rate-limiter'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -29,7 +30,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'PIN חייב להיות 4 ספרות' }, { status: 400 })
   }
 
-  const hash = process.env.ADMIN_PIN_HASH
+  // Get hash — app_config table first (allows runtime PIN changes), then env var fallback
+  let hash: string | null = null
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'admin_pin_hash')
+      .maybeSingle()
+    if (data?.value) hash = data.value
+  } catch { /* DB unreachable — fall through to env var */ }
+
+  if (!hash) hash = process.env.ADMIN_PIN_HASH ?? null
+
   if (!hash) {
     return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
   }
