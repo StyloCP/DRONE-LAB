@@ -9,8 +9,7 @@ export type AppointmentType =
   | 'דיון / שיחה'
 
 export type InquiryType =
-  | 'בקשת שיתוף פעולה'
-  | 'הפניית פרויקט'
+  | 'בקשת יעוץ'
   | 'שאלה טכנית'
   | 'ביקור / סיור'
   | 'אחר'
