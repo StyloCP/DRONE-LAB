@@ -1,4 +1,4 @@
-export type AppointmentStatus = 'ממתין' | 'מאושר' | 'מבוטל'
+export type AppointmentStatus = 'ממתין' | 'מאושר' | 'מבוטל' | 'בוטל-לקוח'
 export type InquiryStatus = 'לא נענה' | 'בטיפול' | 'טופל'
 
 export type AppointmentType =

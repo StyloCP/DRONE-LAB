@@ -50,7 +50,13 @@ export default function AppointmentsTable({ appointments, total, onRefresh }: Pr
   }
 
   const statusColor = (s: string) =>
-    s === 'מאושר' ? '#00ff41' : s === 'מבוטל' ? '#ff4444' : '#ff9900'
+    s === 'מאושר'     ? '#00ff41' :
+    s === 'מבוטל'     ? '#ff4444' :
+    s === 'בוטל-לקוח' ? '#c084fc' :
+    '#ff9900'
+
+  const statusLabel = (s: string) =>
+    s === 'בוטל-לקוח' ? 'לקוח ביטל' : s
 
   return (
     <div>
@@ -94,7 +100,7 @@ export default function AppointmentsTable({ appointments, total, onRefresh }: Pr
                         padding: '0.2rem 0.5rem',
                       }}
                     >
-                      {a.status}
+                      {statusLabel(a.status)}
                     </span>
                   </td>
                   <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -105,7 +111,7 @@ export default function AppointmentsTable({ appointments, total, onRefresh }: Pr
                       {(a.status === 'מאושר' || a.status === 'מבוטל') && (
                         <ActionBtn color="#25D366" onClick={() => resendWhatsApp(a)}>📲</ActionBtn>
                       )}
-                      {a.status !== 'מבוטל' && (
+                      {a.status !== 'מבוטל' && a.status !== 'בוטל-לקוח' && (
                         <ActionBtn color="#ff9900" onClick={() => updateStatus(a.id, 'מבוטל', a)}>⊘ בטל</ActionBtn>
                       )}
                       <ActionBtn color="#ff4444" onClick={() => deleteAppt(a.id)}>✕</ActionBtn>

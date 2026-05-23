@@ -12,32 +12,36 @@ interface StoredAppointment {
   personalId: string
   unit: string
   type: string
-  status: 'ממתין' | 'מאושר' | 'מבוטל'
+  status: 'ממתין' | 'מאושר' | 'מבוטל' | 'בוטל-לקוח'
   bookedAt: string
 }
 
-const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  'ממתין': { bg: 'rgba(251,146,60,0.10)', border: 'rgba(251,146,60,0.40)', text: '#fb923c', icon: '⏳' },
-  'מאושר': { bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.40)',  text: '#22c55e', icon: '✓'  },
-  'מבוטל': { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.40)',  text: '#ef4444', icon: '✕'  },
+const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; icon: string; label: string }> = {
+  'ממתין':     { bg: 'rgba(251,146,60,0.10)', border: 'rgba(251,146,60,0.40)', text: '#fb923c', icon: '⏳', label: 'ממתין לאישור' },
+  'מאושר':     { bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.40)',  text: '#22c55e', icon: '✓',  label: 'מאושר'         },
+  'מבוטל':     { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.40)',  text: '#ef4444', icon: '✕',  label: 'בוטל ע"י מנהל' },
+  'בוטל-לקוח': { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.40)',  text: '#ef4444', icon: '✕',  label: 'ביטלת את התור' },
 }
 
+const CANCELLABLE = ['ממתין', 'מאושר']
+
 export default function MyAppointmentsPage() {
-  const [appt, setAppt] = useState<StoredAppointment | null>(null)
-  const [loaded, setLoaded] = useState(false)
+  const [appt, setAppt]         = useState<StoredAppointment | null>(null)
+  const [loaded, setLoaded]     = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
-    // 1. Load from localStorage immediately (instant display)
+    // 1. Show cached value instantly
     let stored: StoredAppointment | null = null
     try {
       const raw = localStorage.getItem('drone674_my_appointment')
       if (raw) stored = JSON.parse(raw)
-    } catch { /* localStorage unavailable */ }
+    } catch {}
 
     setAppt(stored)
     setLoaded(true)
 
-    // 2. Fetch current status from server (admin may have changed it)
+    // 2. Fetch live status from server (admin may have approved / cancelled)
     if (stored?.id) {
       fetch(`/api/appointments/${stored.id}`)
         .then(r => r.ok ? r.json() : null)
@@ -46,12 +50,10 @@ export default function MyAppointmentsPage() {
           if (serverStatus && serverStatus !== stored!.status) {
             const updated = { ...stored!, status: serverStatus as StoredAppointment['status'] }
             setAppt(updated)
-            try {
-              localStorage.setItem('drone674_my_appointment', JSON.stringify(updated))
-            } catch {}
+            try { localStorage.setItem('drone674_my_appointment', JSON.stringify(updated)) } catch {}
           }
         })
-        .catch(() => { /* network error — keep cached value */ })
+        .catch(() => {})
     }
   }, [])
 
@@ -60,10 +62,32 @@ export default function MyAppointmentsPage() {
     setAppt(null)
   }
 
-  // Prevent SSR flash
+  async function handleCancel() {
+    if (!appt?.id) return
+    if (!confirm('האם אתה בטוח שברצונך לבטל את התור?')) return
+
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/appointments/${appt.id}/cancel`, { method: 'POST' })
+      if (res.ok) {
+        const updated: StoredAppointment = { ...appt, status: 'בוטל-לקוח' }
+        setAppt(updated)
+        try { localStorage.setItem('drone674_my_appointment', JSON.stringify(updated)) } catch {}
+      } else {
+        const data = await res.json()
+        alert(data.error ?? 'שגיאה בביטול התור')
+      }
+    } catch {
+      alert('שגיאת רשת, נסה שוב.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   if (!loaded) return null
 
   const statusStyle = appt ? (STATUS_STYLE[appt.status] ?? STATUS_STYLE['ממתין']) : null
+  const canCancel   = appt ? CANCELLABLE.includes(appt.status) && !!appt.id : false
 
   return (
     <>
@@ -111,7 +135,7 @@ export default function MyAppointmentsPage() {
                   letterSpacing: '0.08em',
                   color: 'var(--green-primary)',
                 }}>
-                  📋 תור פעיל
+                  📋 תור
                 </span>
                 {/* Status badge */}
                 <span style={{
@@ -127,19 +151,14 @@ export default function MyAppointmentsPage() {
                   border: `1px solid ${statusStyle.border}`,
                   color: statusStyle.text,
                 }}>
-                  {statusStyle.icon} {appt.status}
+                  {statusStyle.icon} {statusStyle.label}
                 </span>
               </div>
 
               {/* Card body */}
               <div style={{ padding: '1.25rem', direction: 'rtl' }}>
-                {/* Date & Time row */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '0.75rem',
-                  marginBottom: '0.75rem',
-                }}>
+                {/* Date & Time */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <div style={fieldStyle}>
                     <span style={labelStyle}>📅 תאריך</span>
                     <span style={valueStyle}>{appt.dateDisplay}</span>
@@ -150,13 +169,8 @@ export default function MyAppointmentsPage() {
                   </div>
                 </div>
 
-                {/* Name & Type row */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '0.75rem',
-                  marginBottom: '0.75rem',
-                }}>
+                {/* Name & Type */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <div style={fieldStyle}>
                     <span style={labelStyle}>👤 שם</span>
                     <span style={valueStyle}>{appt.name}</span>
@@ -167,48 +181,24 @@ export default function MyAppointmentsPage() {
                   </div>
                 </div>
 
-                {/* Unit row */}
+                {/* Unit */}
                 <div style={{ ...fieldStyle, marginBottom: '0.75rem' }}>
                   <span style={labelStyle}>🏛 יחידה</span>
                   <span style={valueStyle}>{appt.unit}</span>
                 </div>
 
-                {/* Status note */}
+                {/* Status messages */}
                 {appt.status === 'ממתין' && (
-                  <p style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                    lineHeight: 1.5,
-                    borderTop: '1px solid var(--border)',
-                    paddingTop: '0.75rem',
-                    marginTop: '0.25rem',
-                  }}>
-                    ⏳ התור ממתין לאישור מנהל. תקבל אישור דרך WhatsApp.
-                  </p>
+                  <p style={statusNoteStyle}>⏳ התור ממתין לאישור מנהל. תקבל אישור דרך WhatsApp.</p>
                 )}
                 {appt.status === 'מאושר' && (
-                  <p style={{
-                    fontSize: '0.75rem',
-                    color: '#22c55e',
-                    lineHeight: 1.5,
-                    borderTop: '1px solid var(--border)',
-                    paddingTop: '0.75rem',
-                    marginTop: '0.25rem',
-                  }}>
-                    ✓ התור אושר! נתראה במעבדה.
-                  </p>
+                  <p style={{ ...statusNoteStyle, color: '#22c55e' }}>✓ התור אושר! נתראה במעבדה.</p>
                 )}
                 {appt.status === 'מבוטל' && (
-                  <p style={{
-                    fontSize: '0.75rem',
-                    color: '#ef4444',
-                    lineHeight: 1.5,
-                    borderTop: '1px solid var(--border)',
-                    paddingTop: '0.75rem',
-                    marginTop: '0.25rem',
-                  }}>
-                    ✕ התור בוטל. ניתן לקבוע תור חדש.
-                  </p>
+                  <p style={{ ...statusNoteStyle, color: '#ef4444' }}>✕ התור בוטל על ידי המנהל. ניתן לקבוע תור חדש.</p>
+                )}
+                {appt.status === 'בוטל-לקוח' && (
+                  <p style={{ ...statusNoteStyle, color: '#ef4444' }}>✕ ביטלת את התור. ניתן לקבוע תור חדש.</p>
                 )}
               </div>
 
@@ -223,6 +213,29 @@ export default function MyAppointmentsPage() {
                 <Link href="/appointments" className="btn-primary" style={{ display: 'flex', justifyContent: 'center' }}>
                   📅 קבע תור נוסף
                 </Link>
+
+                {/* Cancel button — only for active appointments */}
+                {canCancel && (
+                  <button
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(239,68,68,0.5)',
+                      borderRadius: 'var(--radius-btn)',
+                      color: '#ef4444',
+                      fontSize: '0.78rem',
+                      padding: '0.6rem',
+                      cursor: cancelling ? 'not-allowed' : 'pointer',
+                      fontFamily: "'Share Tech Mono', monospace",
+                      letterSpacing: '0.04em',
+                      opacity: cancelling ? 0.6 : 1,
+                    }}
+                  >
+                    {cancelling ? '⟳ מבטל...' : '⊘ בטל את התור'}
+                  </button>
+                )}
+
                 <button
                   onClick={handleClear}
                   style={{
@@ -243,7 +256,6 @@ export default function MyAppointmentsPage() {
             </div>
 
           ) : (
-
             /* Empty state */
             <div style={{
               background: 'var(--bg-card)',
@@ -253,27 +265,13 @@ export default function MyAppointmentsPage() {
               textAlign: 'center',
             }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
-              <h3 style={{
-                color: 'var(--text-primary)',
-                marginBottom: '0.5rem',
-                fontSize: '1rem',
-                fontWeight: 700,
-              }}>
+              <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '1rem', fontWeight: 700 }}>
                 אין תורים פעילים
               </h3>
-              <p style={{
-                color: 'var(--text-muted)',
-                marginBottom: '1.5rem',
-                fontSize: '0.85rem',
-                lineHeight: 1.6,
-              }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: 1.6 }}>
                 לאחר קביעת תור, הוא יופיע כאן באופן אוטומטי.
               </p>
-              <Link
-                href="/appointments"
-                className="btn-primary"
-                style={{ display: 'inline-flex', margin: '0 auto' }}
-              >
+              <Link href="/appointments" className="btn-primary" style={{ display: 'inline-flex', margin: '0 auto' }}>
                 📅 קביעת תור
               </Link>
             </div>
@@ -304,4 +302,12 @@ const valueStyle: CSSProperties = {
   fontSize: '0.88rem',
   color: 'var(--text-primary)',
   fontWeight: 600,
+}
+const statusNoteStyle: CSSProperties = {
+  fontSize: '0.75rem',
+  color: 'var(--text-muted)',
+  lineHeight: 1.5,
+  borderTop: '1px solid var(--border)',
+  paddingTop: '0.75rem',
+  marginTop: '0.25rem',
 }
