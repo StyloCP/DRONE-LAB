@@ -1093,29 +1093,40 @@ img { max-width: 100%; display: block; }
   .new-header-antenna { display: none; }
   .new-bottom-nav { display: block; }
 
-  /* ── Mobile background: cover, X-position shows the logo area ── */
-  .hero-bg { background: transparent; }
+  /* ── Mobile: portrait image scoped to hero-bg only — cards never overlap logo ── */
   .home-page {
-    background: url('/images/hero-bg.png') 62% top / cover no-repeat, #050A05;
+    background: #050A05; /* plain dark — portrait image lives on .hero-bg only */
+  }
+  .hero-bg {
+    /*
+     * Image: 853×1844px portrait.
+     * background-size: 120% auto → renders at 468×1011px on 390px container.
+     * Logo at 40% of 1011 = 404px from top (buttons end ~356px → 48px gap).
+     * background-position: center 0% → image top aligned with container top,
+     * showing the spotlight/ceiling area at top (behind readable text via gradient),
+     * and the full logo below the buttons, uncovered.
+     */
+    background: url('/images/hero-bg-mobile.png') center 0% / 120% auto no-repeat, #050A05;
   }
 
-  /* ── Mobile hero section: text at TOP, logo revealed at BOTTOM ── */
+  /* ── Mobile hero: tall enough to show text at top + logo clearly below ── */
   .home-page .hero-section {
-    min-height: 62vh;
+    min-height: 78vh;
   }
   .hero-section {
-    align-items: flex-start; /* text sits at top → logo visible below */
+    align-items: flex-start; /* text pinned to top → logo reveals naturally below */
   }
 
-  /* ── Mobile overlay: dark at top (text readability), transparent at bottom (logo visible) ── */
+  /* ── Gradient: heavy dark top (text readability), clears for logo zone, soft fade at bottom ── */
   .hero-bg::after {
     background:
       linear-gradient(to bottom,
-        rgba(5,10,5,0.90) 0%,
-        rgba(5,10,5,0.72) 30%,
-        rgba(5,10,5,0.35) 58%,
-        rgba(5,10,5,0.08) 80%,
-        rgba(5,10,5,0.0)  100%);
+        rgba(5,10,5,0.93) 0%,
+        rgba(5,10,5,0.78) 22%,
+        rgba(5,10,5,0.20) 45%,
+        rgba(5,10,5,0.02) 58%,
+        rgba(5,10,5,0.02) 85%,
+        rgba(5,10,5,0.30) 100%);
   }
 
   /* ── Hero content: compact, single-column, RTL, anchored to top ── */
