@@ -475,7 +475,7 @@ img { max-width: 100%; display: block; }
   min-height: calc(100vh - var(--nav-h));
   min-height: calc(100dvh - var(--nav-h));
   background:
-    url('/images/hero-bg.jpg') right top / cover no-repeat,
+    url('/images/hero-bg.png') right top / cover no-repeat,
     #050A05;
 }
 .home-page .hero-section {
@@ -1098,7 +1098,7 @@ img { max-width: 100%; display: block; }
     background: transparent;
   }
   .home-page {
-    background: url('/images/hero-bg.jpg') center top / cover no-repeat, #050A05;
+    background: url('/images/hero-bg.png') center top / cover no-repeat, #050A05;
   }
   .hero-bg::after {
     background: rgba(5,10,5,0.38);
