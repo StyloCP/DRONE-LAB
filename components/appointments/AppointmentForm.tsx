@@ -40,6 +40,26 @@ export default function AppointmentForm({ selectedDate, selectedSlot, onSuccess 
       if (res.ok) {
         const [year, month, day] = selectedDate.split('-').map(Number)
         const dateDisplay = `${day} ב${HEBREW_MONTHS[month - 1]} ${year}`
+
+        // Save appointment to localStorage so "התורים שלי" can display it.
+        // localStorage is per-device/browser — each user sees only their own data.
+        try {
+          localStorage.setItem('drone674_my_appointment', JSON.stringify({
+            id: data.id ?? null,
+            dateDisplay,
+            dateRaw: selectedDate,
+            slot: selectedSlot,
+            name,
+            personalId,
+            unit,
+            type,
+            status: 'ממתין',
+            bookedAt: new Date().toISOString(),
+          }))
+        } catch {
+          // localStorage unavailable (private browsing etc.) — silently ignore
+        }
+
         setConfirmed({ date: dateDisplay, slot: selectedSlot, name, type })
         setName(''); setPersonalId(''); setUnit(''); setPhone('')
         showToast('✓ התור נקבע בהצלחה! ממתין לאישור מנהל.')

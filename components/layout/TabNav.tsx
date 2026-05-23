@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const BOTTOM_NAV = [
-  { href: '/my-appointments', label: 'הזמנות שלי', icon: '📋' },
+  { href: '/my-appointments', label: 'התורים שלי', icon: '📋' },
   { href: '/appointments', label: 'קביעת תור', icon: '📅' },
   { href: '/', label: 'דף הבית', icon: '🏠' },
   { href: '/instructions', label: 'פעילות', icon: '📖' },

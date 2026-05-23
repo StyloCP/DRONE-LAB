@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'DB error' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, date: data.date, slot: data.slot }, { status: 201 })
+  return NextResponse.json({ success: true, id: data.id, date: data.date, slot: data.slot }, { status: 201 })
 }
 
 // DELETE — admin only (clear all)
