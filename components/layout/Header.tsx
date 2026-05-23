@@ -9,6 +9,7 @@ import Image from 'next/image'
 const NAV_ITEMS = [
   { href: '/', label: 'דף הבית' },
   { href: '/appointments', label: 'קביעת תור' },
+  { href: '/my-appointments', label: 'התורים שלי' },
   { href: '/instructions', label: 'פעילות' },
   { href: '/about', label: 'אודותינו' },
   { href: '/contact', label: 'צור קשר' },
