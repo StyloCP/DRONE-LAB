@@ -26,9 +26,31 @@ const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; i
 const CANCELLABLE = ['ממתין', 'מאושר']
 
 export default function MyAppointmentsPage() {
-  const [appt, setAppt]         = useState<StoredAppointment | null>(null)
-  const [loaded, setLoaded]     = useState(false)
+  const [appt, setAppt]             = useState<StoredAppointment | null>(null)
+  const [loaded, setLoaded]         = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [syncing, setSyncing]       = useState(false)
+
+  // Fetch live status from server and sync localStorage
+  async function syncStatus(current: StoredAppointment) {
+    if (!current.id) return
+    setSyncing(true)
+    try {
+      // timestamp busts any browser-level cache
+      const res = await fetch(`/api/appointments/${current.id}?t=${Date.now()}`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) return
+      const data: { appointment?: { status: string } } = await res.json()
+      const serverStatus = data?.appointment?.status
+      if (serverStatus && serverStatus !== current.status) {
+        const updated = { ...current, status: serverStatus as StoredAppointment['status'] }
+        setAppt(updated)
+        try { localStorage.setItem('drone674_my_appointment', JSON.stringify(updated)) } catch {}
+      }
+    } catch {}
+    finally { setSyncing(false) }
+  }
 
   useEffect(() => {
     // 1. Show cached value instantly
@@ -41,20 +63,9 @@ export default function MyAppointmentsPage() {
     setAppt(stored)
     setLoaded(true)
 
-    // 2. Fetch live status from server (admin may have approved / cancelled)
-    if (stored?.id) {
-      fetch(`/api/appointments/${stored.id}`)
-        .then(r => r.ok ? r.json() : null)
-        .then((data: { appointment?: { status: string } } | null) => {
-          const serverStatus = data?.appointment?.status
-          if (serverStatus && serverStatus !== stored!.status) {
-            const updated = { ...stored!, status: serverStatus as StoredAppointment['status'] }
-            setAppt(updated)
-            try { localStorage.setItem('drone674_my_appointment', JSON.stringify(updated)) } catch {}
-          }
-        })
-        .catch(() => {})
-    }
+    // 2. Fetch live status on every mount
+    if (stored?.id) syncStatus(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleClear() {
@@ -70,11 +81,14 @@ export default function MyAppointmentsPage() {
     try {
       const res = await fetch(`/api/appointments/${appt.id}/cancel`, { method: 'POST' })
       if (res.ok) {
+        // Optimistically update UI, then confirm with server
         const updated: StoredAppointment = { ...appt, status: 'בוטל-לקוח' }
         setAppt(updated)
         try { localStorage.setItem('drone674_my_appointment', JSON.stringify(updated)) } catch {}
+        // Verify server state
+        await syncStatus(updated)
       } else {
-        const data = await res.json()
+        const data: { error?: string } = await res.json()
         alert(data.error ?? 'שגיאה בביטול התור')
       }
     } catch {
@@ -214,42 +228,33 @@ export default function MyAppointmentsPage() {
                   📅 קבע תור נוסף
                 </Link>
 
-                {/* Cancel button — only for active appointments */}
+                {/* Refresh status */}
+                <button
+                  onClick={() => appt && syncStatus(appt)}
+                  disabled={syncing}
+                  style={ghostBtnStyle}
+                >
+                  {syncing ? '⟳ מעדכן...' : '↻ רענן סטטוס'}
+                </button>
+
+                {/* Cancel — only for active appointments */}
                 {canCancel && (
                   <button
                     onClick={handleCancel}
-                    disabled={cancelling}
+                    disabled={cancelling || syncing}
                     style={{
-                      background: 'transparent',
+                      ...ghostBtnStyle,
                       border: '1px solid rgba(239,68,68,0.5)',
-                      borderRadius: 'var(--radius-btn)',
                       color: '#ef4444',
-                      fontSize: '0.78rem',
-                      padding: '0.6rem',
-                      cursor: cancelling ? 'not-allowed' : 'pointer',
-                      fontFamily: "'Share Tech Mono', monospace",
-                      letterSpacing: '0.04em',
-                      opacity: cancelling ? 0.6 : 1,
+                      opacity: (cancelling || syncing) ? 0.6 : 1,
+                      cursor: (cancelling || syncing) ? 'not-allowed' : 'pointer',
                     }}
                   >
                     {cancelling ? '⟳ מבטל...' : '⊘ בטל את התור'}
                   </button>
                 )}
 
-                <button
-                  onClick={handleClear}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-btn)',
-                    color: 'var(--text-muted)',
-                    fontSize: '0.78rem',
-                    padding: '0.55rem',
-                    cursor: 'pointer',
-                    fontFamily: "'Share Tech Mono', monospace",
-                    letterSpacing: '0.04em',
-                  }}
-                >
+                <button onClick={handleClear} style={ghostBtnStyle}>
                   ✕ נקה רשימה
                 </button>
               </div>
@@ -310,4 +315,16 @@ const statusNoteStyle: CSSProperties = {
   borderTop: '1px solid var(--border)',
   paddingTop: '0.75rem',
   marginTop: '0.25rem',
+}
+const ghostBtnStyle: CSSProperties = {
+  background: 'transparent',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-btn)',
+  color: 'var(--text-muted)',
+  fontSize: '0.78rem',
+  padding: '0.55rem',
+  cursor: 'pointer',
+  fontFamily: "'Share Tech Mono', monospace",
+  letterSpacing: '0.04em',
+  width: '100%',
 }

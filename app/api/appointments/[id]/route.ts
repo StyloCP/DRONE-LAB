@@ -27,7 +27,9 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ appointment: data })
+  return NextResponse.json({ appointment: data }, {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+  })
 }
 
 // PATCH — update appointment status
