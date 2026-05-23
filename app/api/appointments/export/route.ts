@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { isAdmin } from '@/lib/auth/require-admin'
 import { buildAppointmentsCsv } from '@/lib/csv'
 import type { Appointment } from '@/lib/types'
 
-export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function GET(request: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('appointments')
     .select('*')
@@ -26,9 +26,11 @@ export async function GET() {
   const bytes = new TextEncoder().encode(csv)
 
   // Audit
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   await adminClient.from('audit_log').insert([{
     action: 'export_csv',
-    admin_email: user.email,
+    admin_email: 'admin',
+    ip_address: ip,
   }])
 
   return new NextResponse(bytes, {

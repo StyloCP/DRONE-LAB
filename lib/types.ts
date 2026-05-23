@@ -65,8 +65,7 @@ export const APPOINTMENT_TYPES: AppointmentType[] = [
 ]
 
 export const INQUIRY_TYPES: InquiryType[] = [
-  'בקשת שיתוף פעולה',
-  'הפניית פרויקט',
+  'בקשת יעוץ',
   'שאלה טכנית',
   'ביקור / סיור',
   'אחר',

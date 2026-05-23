@@ -1,7 +1,6 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export default function AccessGate() {
   const [code, setCode] = useState('')
@@ -9,7 +8,6 @@ export default function AccessGate() {
   const [locked, setLocked] = useState(false)
   const [lockMs, setLockMs] = useState(0)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -28,9 +26,8 @@ export default function AccessGate() {
       const data = await res.json()
 
       if (res.ok) {
-        // Token stored in httpOnly cookie by server
-        router.push('/appointments')
-        router.refresh()
+        // Hard redirect so middleware picks up the new httpOnly cookie
+        window.location.replace('/appointments')
       } else if (res.status === 429) {
         setLocked(true)
         setLockMs(data.retryAfterMs ?? 15 * 60 * 1000)
@@ -61,9 +58,10 @@ export default function AccessGate() {
           <div className="classify-tag">RESTRICTED ACCESS</div>
           <h3
             style={{
-              fontFamily: "'Share Tech Mono', monospace",
+              fontFamily: "'Heebo', 'Arial Hebrew', Arial, sans-serif",
               color: 'var(--green)',
-              fontSize: '1rem',
+              fontSize: '1.1rem',
+              fontWeight: 700,
               marginTop: '0.8rem',
             }}
           >

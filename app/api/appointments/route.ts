@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { verifyUnitToken } from '@/lib/auth/unit-token'
+import { isAdmin } from '@/lib/auth/require-admin'
 import { cookies } from 'next/headers'
 import { isSaturday, isPastDate } from '@/lib/dates'
 import { TIME_SLOTS } from '@/lib/types'
 
 // GET — admin only (full list)
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('appointments')
     .select('*')
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Insert (UNIQUE(date, slot) prevents double-booking at DB level)
-  const supabase = await createAdminClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('appointments')
     .insert([{ name, personal_id, unit, type, phone, date, slot, status: 'ממתין' }])
@@ -87,21 +85,22 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE — admin only (clear all)
-export async function DELETE() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function DELETE(request: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
   const { error } = await adminClient.from('appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
   if (error) return NextResponse.json({ error: 'DB error' }, { status: 500 })
 
   // Audit log
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   await adminClient.from('audit_log').insert([{
     action: 'clear_all_appointments',
-    admin_email: user.email,
+    admin_email: 'admin',
+    ip_address: ip,
   }])
 
   return NextResponse.json({ success: true })

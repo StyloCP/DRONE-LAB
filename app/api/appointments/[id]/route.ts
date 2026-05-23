@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { isAdmin } from '@/lib/auth/require-admin'
 import { generateApprovalLink, generateCancellationLink } from '@/lib/whatsapp'
 import type { Appointment } from '@/lib/types'
-
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
 
 // PATCH — update appointment status
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const { id } = await params
   const body = await request.json()
@@ -25,7 +21,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
   }
 
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
 
   const { data: appt, error: fetchError } = await adminClient
     .from('appointments')
@@ -45,11 +41,12 @@ export async function PATCH(
   if (updateError) return NextResponse.json({ error: 'DB error' }, { status: 500 })
 
   // Audit log
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   await adminClient.from('audit_log').insert([{
     action: status === 'מאושר' ? 'approve_appointment' : 'cancel_appointment',
     target_id: id,
-    admin_email: user.email,
-    ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+    admin_email: 'admin',
+    ip_address: ip,
   }])
 
   // Generate WhatsApp link
@@ -67,19 +64,22 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const { id } = await params
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
 
   const { error } = await adminClient.from('appointments').delete().eq('id', id)
   if (error) return NextResponse.json({ error: 'DB error' }, { status: 500 })
 
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   await adminClient.from('audit_log').insert([{
     action: 'delete_appointment',
     target_id: id,
-    admin_email: user.email,
+    admin_email: 'admin',
+    ip_address: ip,
   }])
 
   return NextResponse.json({ success: true })

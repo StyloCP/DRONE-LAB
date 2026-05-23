@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { signUnitToken } from '@/lib/auth/unit-token'
 import { checkRateLimit, recordFailedAttempt, clearAttempts } from '@/lib/auth/rate-limiter'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -29,19 +30,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'קוד גישה נדרש' }, { status: 400 })
   }
 
-  const hash = process.env.UNIT_ACCESS_CODE_HASH
-  const plainCode = process.env.UNIT_ACCESS_CODE
+  // --- Hash resolution: DB first, env fallback ---
+  let hash: string | null = null
+  let usePlainFallback = false
+
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'unit_access_code_hash')
+      .maybeSingle()
+    if (data?.value) hash = data.value
+  } catch {
+    // DB unreachable — fall through to env vars
+  }
+
+  if (!hash) hash = process.env.UNIT_ACCESS_CODE_HASH ?? null
+
+  if (!hash) {
+    const plainCode = process.env.UNIT_ACCESS_CODE
+    if (plainCode) { usePlainFallback = true; hash = plainCode }
+  }
+
+  if (!hash) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+  }
 
   let valid = false
-
-  if (hash) {
-    valid = await bcrypt.compare(code, hash)
-  } else if (plainCode) {
-    // Fallback for development — compare plain text
-    valid = code === plainCode
+  if (usePlainFallback) {
+    valid = code === hash
   } else {
-    // No code configured
-    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+    valid = await bcrypt.compare(code, hash)
   }
 
   if (!valid) {

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { isAdmin } from '@/lib/auth/require-admin'
 
 // GET — admin only
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const adminClient = await createAdminClient()
+  const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('inquiries')
     .select('*')
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'כתובת דואל לא תקינה' }, { status: 400 })
   }
 
-  const supabase = await createAdminClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('inquiries')
     .insert([{ name, personal_id: personal_id || null, email, unit: unit || null, type, content, status: 'לא נענה' }])

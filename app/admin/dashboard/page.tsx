@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import AppointmentsTable from '@/components/admin/AppointmentsTable'
 import InquiriesTable from '@/components/admin/InquiriesTable'
+import ChangeUnitPassword from '@/components/admin/ChangeUnitPassword'
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard'
 import { useToast } from '@/context/ToastContext'
 import type { Appointment, Inquiry } from '@/lib/types'
@@ -45,10 +45,8 @@ export default function DashboardPage() {
   })
 
   async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/admin/login')
-    router.refresh()
+    await fetch('/api/auth/admin/logout', { method: 'POST' })
+    window.location.href = '/admin/login'
   }
 
   async function handleExportCSV() {
@@ -132,6 +130,9 @@ export default function DashboardPage() {
         pending={pendingInquiries}
         onRefresh={fetchInquiries}
       />
+
+      {/* Unit Access Code Management */}
+      <ChangeUnitPassword />
     </div>
   )
 }
