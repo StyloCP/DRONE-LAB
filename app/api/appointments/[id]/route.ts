@@ -4,6 +4,32 @@ import { isAdmin } from '@/lib/auth/require-admin'
 import { generateApprovalLink, generateCancellationLink } from '@/lib/whatsapp'
 import type { Appointment } from '@/lib/types'
 
+// GET — fetch status by appointment ID (no auth: UUID is 128-bit random, effectively unguessable)
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  // Validate UUID format
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+  }
+
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
+    .from('appointments')
+    .select('id, status, date, slot, name, type, unit')
+    .eq('id', id)
+    .single()
+
+  if (error || !data) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  return NextResponse.json({ appointment: data })
+}
+
 // PATCH — update appointment status
 export async function PATCH(
   request: NextRequest,

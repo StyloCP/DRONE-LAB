@@ -27,11 +27,32 @@ export default function MyAppointmentsPage() {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    // 1. Load from localStorage immediately (instant display)
+    let stored: StoredAppointment | null = null
     try {
       const raw = localStorage.getItem('drone674_my_appointment')
-      if (raw) setAppt(JSON.parse(raw))
+      if (raw) stored = JSON.parse(raw)
     } catch { /* localStorage unavailable */ }
+
+    setAppt(stored)
     setLoaded(true)
+
+    // 2. Fetch current status from server (admin may have changed it)
+    if (stored?.id) {
+      fetch(`/api/appointments/${stored.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then((data: { appointment?: { status: string } } | null) => {
+          const serverStatus = data?.appointment?.status
+          if (serverStatus && serverStatus !== stored!.status) {
+            const updated = { ...stored!, status: serverStatus as StoredAppointment['status'] }
+            setAppt(updated)
+            try {
+              localStorage.setItem('drone674_my_appointment', JSON.stringify(updated))
+            } catch {}
+          }
+        })
+        .catch(() => { /* network error — keep cached value */ })
+    }
   }, [])
 
   function handleClear() {
