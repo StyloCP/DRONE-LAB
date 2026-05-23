@@ -1093,34 +1093,34 @@ img { max-width: 100%; display: block; }
   .new-header-antenna { display: none; }
   .new-bottom-nav { display: block; }
 
-  /* ── Mobile background: position to show the Drone Lab logo on the wall ── */
+  /* ── Mobile background: cover, X-position shows the logo area ── */
   .hero-bg { background: transparent; }
   .home-page {
-    background: url('/images/hero-bg.png') 68% top / cover no-repeat, #050A05;
+    background: url('/images/hero-bg.png') 62% top / cover no-repeat, #050A05;
   }
 
-  /* ── Mobile hero section: shorter, text anchored to bottom (poster style) ── */
+  /* ── Mobile hero section: text at TOP, logo revealed at BOTTOM ── */
   .home-page .hero-section {
-    min-height: 58vh;
+    min-height: 62vh;
   }
   .hero-section {
-    align-items: flex-end;
+    align-items: flex-start; /* text sits at top → logo visible below */
   }
 
-  /* ── Mobile overlay: dark at bottom (text area), transparent at top (logo area) ── */
+  /* ── Mobile overlay: dark at top (text readability), transparent at bottom (logo visible) ── */
   .hero-bg::after {
     background:
-      linear-gradient(to top,
-        rgba(5,10,5,0.98) 0%,
-        rgba(5,10,5,0.85) 22%,
-        rgba(5,10,5,0.52) 44%,
-        rgba(5,10,5,0.18) 66%,
-        rgba(5,10,5,0.0)  84%);
+      linear-gradient(to bottom,
+        rgba(5,10,5,0.90) 0%,
+        rgba(5,10,5,0.72) 30%,
+        rgba(5,10,5,0.35) 58%,
+        rgba(5,10,5,0.08) 80%,
+        rgba(5,10,5,0.0)  100%);
   }
 
-  /* ── Hero content: compact, single-column, RTL ── */
+  /* ── Hero content: compact, single-column, RTL, anchored to top ── */
   .hero-content {
-    padding: 0 1.25rem 2.25rem;
+    padding: 2rem 1.25rem 0;
     grid-template-columns: 1fr;
     direction: rtl;
     align-items: flex-start;
@@ -1128,10 +1128,10 @@ img { max-width: 100%; display: block; }
   }
   .hero-text { max-width: 100%; direction: rtl; }
 
-  /* Tighten spacing so text block stays compact at bottom */
-  .hero-badge    { margin-bottom: 0.875rem; }
-  .hero-title    { font-size: clamp(1.85rem, 7.5vw, 2.4rem); margin-bottom: 0.3rem; }
-  .hero-subtitle { margin-bottom: 0.75rem; padding-bottom: 0.75rem; }
+  /* Tighten spacing — keep badge/title/subtitle/buttons compact at top */
+  .hero-badge    { margin-bottom: 0.75rem; }
+  .hero-title    { font-size: clamp(1.85rem, 7.5vw, 2.4rem); margin-bottom: 0.25rem; }
+  .hero-subtitle { margin-bottom: 0.65rem; padding-bottom: 0.65rem; }
   .hero-description { display: none; } /* Hidden on mobile — image tells the story */
   .hero-actions  { gap: 0.6rem; }
 
