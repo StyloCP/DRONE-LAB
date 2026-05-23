@@ -1093,32 +1093,82 @@ img { max-width: 100%; display: block; }
   .new-header-antenna { display: none; }
   .new-bottom-nav { display: block; }
 
-  .hero-bg {
+  /* ── Mobile background: position to show the Drone Lab logo on the wall ── */
+  .hero-bg { background: transparent; }
+  .home-page {
+    background: url('/images/hero-bg.png') 68% top / cover no-repeat, #050A05;
+  }
+
+  /* ── Mobile hero section: shorter, text anchored to bottom (poster style) ── */
+  .home-page .hero-section {
+    min-height: 58vh;
+  }
+  .hero-section {
+    align-items: flex-end;
+  }
+
+  /* ── Mobile overlay: dark at bottom (text area), transparent at top (logo area) ── */
+  .hero-bg::after {
+    background:
+      linear-gradient(to top,
+        rgba(5,10,5,0.98) 0%,
+        rgba(5,10,5,0.85) 22%,
+        rgba(5,10,5,0.52) 44%,
+        rgba(5,10,5,0.18) 66%,
+        rgba(5,10,5,0.0)  84%);
+  }
+
+  /* ── Hero content: compact, single-column, RTL ── */
+  .hero-content {
+    padding: 0 1.25rem 2.25rem;
+    grid-template-columns: 1fr;
+    direction: rtl;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .hero-text { max-width: 100%; direction: rtl; }
+
+  /* Tighten spacing so text block stays compact at bottom */
+  .hero-badge    { margin-bottom: 0.875rem; }
+  .hero-title    { font-size: clamp(1.85rem, 7.5vw, 2.4rem); margin-bottom: 0.3rem; }
+  .hero-subtitle { margin-bottom: 0.75rem; padding-bottom: 0.75rem; }
+  .hero-description { display: none; } /* Hidden on mobile — image tells the story */
+  .hero-actions  { gap: 0.6rem; }
+
+  /* ── Feature cards: glass over background image ── */
+  .features-section {
+    padding: 0.875rem 0.875rem 1.25rem;
     background: transparent;
   }
-  .home-page {
-    background: url('/images/hero-bg.png') center -100px / cover no-repeat, #050A05;
+  .features-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
   }
-  .hero-bg::after {
-    background: rgba(5,10,5,0.38);
+  .feature-card {
+    padding: 14px 12px;
+    background: rgba(8,14,8,0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
-  .hero-content { padding: 3rem 1.5rem 2rem; grid-template-columns: 1fr; direction: rtl; }
-  .hero-text { max-width: 100%; direction: rtl; }
-  .hero-title { font-size: clamp(1.8rem, 7vw, 2.4rem); }
-  .hero-description { max-width: 100%; }
-
-  .features-section { padding: 1rem 1rem 1.5rem; }
-  .features-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .feature-card { padding: 16px; }
+  .card-icon { width: 44px; height: 44px; font-size: 1.3rem; margin-bottom: 10px; }
+  .card-title { font-size: 0.88rem; }
+  .card-description { font-size: 0.76rem; }
 
   .services-grid { grid-template-columns: 1fr; }
   .info-cards-row { grid-template-columns: repeat(2, 1fr); }
-  .new-footer { padding: 1rem 1.5rem; }
-  .new-footer-inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .footer-items { gap: 1rem; flex-wrap: wrap; }
+
+  /* ── Footer ── */
+  .new-footer { padding: 1rem 1.25rem; }
+  .new-footer-inner { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
+  .footer-items { gap: 0.5rem; flex-wrap: wrap; }
+  .footer-item { font-size: 0.7rem; padding: 0.3rem 0.6rem 0.3rem 0.5rem; }
 }
+
 @media (max-width: 480px) {
-  .features-grid { grid-template-columns: 1fr; }
+  /* Very small screens: single-column cards */
+  .features-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .hero-title { font-size: clamp(1.7rem, 8vw, 2.1rem); }
+  .btn-primary, .btn-outline { font-size: 0.85rem; padding: 0.65rem 1.25rem; }
 }
 @media (min-width: 769px) {
   .new-bottom-nav { display: none; }
